@@ -219,3 +219,8 @@
 2. 再做本地文件夹选择
 3. 然后实现 EPUB 扫描与书库展示
 4. 最后接入阅读器与进度保存
+
+tech stack
+
+- zustand : manage the globle state
+- react-ebooks : render epub file
