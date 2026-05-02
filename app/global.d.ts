@@ -18,9 +18,33 @@ interface FileSystemDirectoryHandle extends FileSystemHandle {
     name: string,
     options?: { create?: boolean },
   ): Promise<FileSystemDirectoryHandle>;
+  getFileHandle(
+    name: string,
+    options?: { create?: boolean },
+  ): Promise<FileSystemFileHandle>;
 }
 
 interface FileSystemFileHandle extends FileSystemHandle {
   kind: 'file';
   name: string;
+  getFile(): Promise<File>;
 }
+
+declare global {
+  namespace React {
+    interface HTMLAttributes {
+      flow?: string;
+    }
+  }
+}
+
+declare namespace JSX {
+  interface IntrinsicElements {
+    'foliate-view': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+    'foliate-paginator': React.DetailedHTMLProps<React.HTMLAttributes<HTMLElement>, HTMLElement>;
+  }
+}
+
+declare module 'foliate-js/view.js';
+declare module 'foliate-js/paginator.js';
+declare module 'foliate-js/epub.js';

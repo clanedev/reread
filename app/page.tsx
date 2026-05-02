@@ -2,8 +2,8 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { setShelfState } from '../lib/shelf/db';
-import type { ShelfState } from '../lib/shelf/types';
+import { setShelfState } from '@/lib/shelf/db';
+import type { ShelfState } from '@/lib/shelf/types';
 
 const features = [
   {

@@ -8,8 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: ui-sans-serif, system-ui, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, monospace;
 }
 
 html {
@@ -21,4 +21,48 @@ body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), sans-serif;
+}
+
+.reader-chapter {
+  width: min(100%, var(--reader-max-width, 740px));
+  font-size: var(--reader-font-size, 18px);
+  line-height: var(--reader-line-height, 1.9);
+  color: var(--reader-foreground, currentColor);
+}
+
+.reader-chapter p {
+  margin: 0;
+  text-align: var(--reader-text-align, justify);
+}
+
+.reader-chapter p + p {
+  margin-top: var(--reader-paragraph-spacing, 0.85em);
+}
+
+.reader-chapter p:first-of-type {
+  text-indent: var(--reader-first-indent, 1.8em);
+}
+
+.reader-chapter h1,
+.reader-chapter h2,
+.reader-chapter h3,
+.reader-chapter h4,
+.reader-chapter h5,
+.reader-chapter h6 {
+  text-wrap: balance;
+}
+
+.reader-chapter img,
+.reader-chapter video,
+.reader-chapter svg,
+.reader-chapter table,
+.reader-chapter iframe {
+  max-width: 100%;
+}
+
+.reader-chapter hr {
+  border: 0;
+  height: 1px;
+  margin: 2rem 0;
+  background: color-mix(in srgb, var(--reader-muted, currentColor) 18%, transparent);
 }

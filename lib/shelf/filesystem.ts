@@ -24,3 +24,7 @@ export async function listDirectoryEntries(
 export function getPathKey(path: string[]) {
   return path.join('/');
 }
+
+export function isEpubFileName(name: string) {
+  return name.toLowerCase().endsWith('.epub');
+}
