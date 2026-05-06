@@ -21,11 +21,7 @@ export default function ShelfPage() {
     <>
       <ShelfHeader onResetShelf={shelf.resetShelf} />
 
-      <ShelfBreadcrumb
-        currentPathLabel={shelf.currentPathLabel}
-        canGoUp={shelf.canGoUp}
-        onGoUp={shelf.goUp}
-      />
+      <ShelfBreadcrumb currentPath={shelf.state?.currentPath ?? []} onGoToPath={shelf.goToPath} />
 
       <ShelfContent loading={shelf.loading} error={shelf.error} hasShelf={Boolean(shelf.state)}>
         <ShelfGrid

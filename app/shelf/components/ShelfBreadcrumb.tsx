@@ -1,32 +1,50 @@
 "use client";
 
-// Current shelf path and navigation control.
+import { ChevronRight, House } from "lucide-react";
+
 export function ShelfBreadcrumb({
-  currentPathLabel,
-  canGoUp,
-  onGoUp,
+  currentPath,
+  onGoToPath,
 }: {
-  currentPathLabel: string;
-  canGoUp: boolean;
-  onGoUp: () => void;
+  currentPath: string[];
+  onGoToPath: (path: string[]) => void;
 }) {
+  const segments = currentPath.slice(1);
+
   return (
     <section className="py-8">
-      <div className="flex flex-col gap-4 rounded-[1.8rem] border border-black/8 bg-white/90 p-5 shadow-[0_16px_34px_rgba(20,34,33,0.06)] backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.24em] text-[#4cada9]">Current path</p>
-          <h2 className="mt-2 text-2xl font-semibold">{currentPathLabel}</h2>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => void onGoUp()}
-            disabled={!canGoUp}
-            className="rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-medium text-[#1d2524] transition hover:border-black/20 hover:bg-[#fbfcfb] disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            Up one level
-          </button>
-        </div>
-      </div>
+      <nav aria-label="Breadcrumb" className="min-w-0">
+        <ol className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-[#6c7b79]">
+          <li className="flex items-center min-w-0 gap-2">
+            <button
+              type="button"
+              onClick={() => onGoToPath(currentPath.slice(0, 1))}
+              className="flex items-center gap-2 font-medium text-[#1d2524] transition hover:text-[#4cada9]"
+            >
+              <House className="w-4 h-4 shrink-0" />
+              <span>Home</span>
+            </button>
+          </li>
+          {segments.map((segment, index) => {
+            const nextPath = currentPath.slice(0, index + 2);
+            return (
+              <li
+                key={`${segment}-${index}`}
+                className="flex items-center min-w-0 gap-2"
+              >
+                <ChevronRight className="w-4 h-4 shrink-0" />
+                <button
+                  type="button"
+                  onClick={() => onGoToPath(nextPath)}
+                  className="truncate font-medium text-[#1d2524] transition hover:text-[#4cada9]"
+                >
+                  {segment}
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </nav>
     </section>
   );
 }

@@ -99,10 +99,9 @@ export function useShelf() {
     }
   }
 
-  async function goUp() {
-    if (!state || state.currentPath.length <= 1) return;
+  async function goToPath(nextPath: string[]) {
+    if (!state || getPathKey(nextPath) === getPathKey(state.currentPath)) return;
 
-    const nextPath = state.currentPath.slice(0, -1);
     const nextState: ShelfState = {
       ...state,
       currentPath: nextPath,
@@ -111,6 +110,12 @@ export function useShelf() {
     await setShelfState(nextState);
     setState(nextState);
     await loadShelf(nextState);
+  }
+
+  async function goUp() {
+    if (!state || state.currentPath.length <= 1) return;
+
+    await goToPath(state.currentPath.slice(0, -1));
   }
 
   async function resetShelf() {
@@ -132,6 +137,7 @@ export function useShelf() {
     currentPathKey,
     canGoUp,
     enterDirectory,
+    goToPath,
     goUp,
     resetShelf,
   };

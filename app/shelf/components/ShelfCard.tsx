@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
+import { FolderClosed } from "lucide-react";
 import { slugFromFilename } from "@/lib/reader/slug";
 import type { DirectoryEntry } from "@/lib/shelf/types";
 import type { ShelfPreview } from "../types";
@@ -116,21 +117,12 @@ export function ShelfCard({
       <button
         key={`${entry.kind}-${entry.name}`}
         onClick={() => void onEnterDirectory(entry.name)}
-        className="group flex h-full flex-col rounded-sm bg-white text-left shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition hover:-translate-y-1 hover:shadow-[0_12px_32px_rgba(0,0,0,0.12)]"
+        className="group flex h-full flex-col rounded-sm bg-white text-left shadow-[0_8px_24px_rgba(0,0,0,0.08)] transition hover:scale-[1.02] cursor-pointer"
       >
         <div className="flex aspect-[11/15] items-center justify-center rounded-sm bg-[linear-gradient(180deg,#eef4f2_0%,#f8fbfa_100%)] p-5">
-          <div className="flex h-full w-full flex-col justify-between rounded-[10px] border border-black/6 bg-[#fbfdfc] p-4">
-            <div className="flex items-start justify-between text-[#4cada9]">
-              <span className="text-xs uppercase tracking-[0.28em]">
-                Folder
-              </span>
-              <span className="text-2xl leading-none">▣</span>
-            </div>
-            <div className="space-y-2">
-              <div className="text-4xl leading-none text-[#bcc9c6]">▦</div>
-              <div className="rounded-full border border-black/6 bg-white px-3 py-1 text-xs uppercase tracking-[0.24em] text-[#6c7b79]">
-                {entry.name}
-              </div>
+          <div className="flex h-full w-full flex-col justify-end rounded-[10px] ">
+            <div className="w-full">
+              <FolderClosed className="w-full h-auto" />
             </div>
           </div>
         </div>
@@ -139,9 +131,7 @@ export function ShelfCard({
             <p className="truncate text-[0.95rem] font-medium text-[#1d2524]">
               {entry.name}
             </p>
-            <p className="text-sm text-[#6c7b79]">Directory</p>
           </div>
-          <EntryBadge kind="directory" />
         </div>
       </button>
     );
