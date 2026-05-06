@@ -64,5 +64,15 @@ body {
   border: 0;
   height: 1px;
   margin: 2rem 0;
-  background: color-mix(in srgb, var(--reader-muted, currentColor) 18%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--reader-muted, currentColor) 18%,
+    transparent
+  );
+}
+
+.shelf-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
 }

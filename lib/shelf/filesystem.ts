@@ -1,11 +1,19 @@
 import type { DirectoryEntry } from './types';
 
+export function isEpubFileName(name: string) {
+  return name.toLowerCase().endsWith('.epub');
+}
+
 export async function listDirectoryEntries(
   handle: FileSystemDirectoryHandle,
 ): Promise<DirectoryEntry[]> {
   const entries: DirectoryEntry[] = [];
 
   for await (const [name, entryHandle] of handle.entries()) {
+    if (entryHandle.kind === 'file' && !isEpubFileName(name)) {
+      continue;
+    }
+
     entries.push({
       name,
       kind: entryHandle.kind,
@@ -23,8 +31,4 @@ export async function listDirectoryEntries(
 
 export function getPathKey(path: string[]) {
   return path.join('/');
-}
-
-export function isEpubFileName(name: string) {
-  return name.toLowerCase().endsWith('.epub');
 }
