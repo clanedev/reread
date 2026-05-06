@@ -19,7 +19,7 @@ export default function ShelfPage() {
 
   return (
     <>
-      <ShelfHeader onResetShelf={shelf.resetShelf} />
+      <ShelfHeader />
 
       <ShelfBreadcrumb currentPath={shelf.state?.currentPath ?? []} onGoToPath={shelf.goToPath} />
 

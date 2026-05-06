@@ -2,10 +2,11 @@ import { openDB } from 'idb';
 import type { ShelfState } from './types';
 
 const DB_NAME = 'reread-db';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const SHELF_STORE = 'shelf';
 const EPUB_FINGERPRINT_STORE = 'epub-fingerprints';
 const EPUB_BOOK_STORE = 'epub-books';
+const EPUB_BOOK_LOCATION_STORE = 'epub-book-locations';
 const STATE_KEY = 'state';
 
 let dbPromise: ReturnType<typeof openDB> | null = null;
@@ -23,6 +24,13 @@ export interface EpubBookRecord {
   author: string | null;
   modified: string | null;
   coverBlob: Blob | null;
+  updatedAt: number;
+}
+
+export interface EpubBookLocationRecord {
+  contentKey: string;
+  dirKey: string;
+  fileName: string;
   updatedAt: number;
 }
 
@@ -44,6 +52,10 @@ function getDB() {
 
         if (!db.objectStoreNames.contains(EPUB_BOOK_STORE)) {
           db.createObjectStore(EPUB_BOOK_STORE);
+        }
+
+        if (!db.objectStoreNames.contains(EPUB_BOOK_LOCATION_STORE)) {
+          db.createObjectStore(EPUB_BOOK_LOCATION_STORE);
         }
       },
     });
@@ -85,4 +97,14 @@ export async function getEpubBookRecord(contentKey: string) {
 export async function setEpubBookRecord(record: EpubBookRecord) {
   const db = await getDB();
   await db.put(EPUB_BOOK_STORE, record, record.contentKey);
+}
+
+export async function getEpubBookLocationRecord(contentKey: string) {
+  const db = await getDB();
+  return (await db.get(EPUB_BOOK_LOCATION_STORE, contentKey)) as EpubBookLocationRecord | undefined;
+}
+
+export async function setEpubBookLocationRecord(record: EpubBookLocationRecord) {
+  const db = await getDB();
+  await db.put(EPUB_BOOK_LOCATION_STORE, record, record.contentKey);
 }

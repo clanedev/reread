@@ -12,14 +12,6 @@ function fileTitle(name: string) {
   return name.replace(/\.(epub|pdf|mobi|azw3|cbz|cbr|txt|html?|xhtml)$/i, "");
 }
 
-function EntryBadge({ kind }: { kind: DirectoryEntry["kind"] }) {
-  return (
-    <span className="shrink-0 rounded-full border border-black/8 bg-[#f7fbfa] px-3 py-1 text-xs font-medium uppercase tracking-[0.22em] text-[#4cada9]">
-      {kind === "directory" ? "Open" : "EPUB"}
-    </span>
-  );
-}
-
 function CoverPreview({
   title,
   coverUrl,
@@ -144,13 +136,17 @@ export function ShelfCard({
   return (
     <article className="group relative flex h-full flex-col rounded-xl transition-transform duration-200 hover:scale-[1.02]">
       <Link
-        href={{
-          pathname: `/reader/${slugFromFilename(entry.name)}`,
-          query: {
-            name: entry.name,
-            dir: currentPathKey,
-          },
-        }}
+        href={
+          preview?.contentKey
+            ? `/reader/${encodeURIComponent(preview.contentKey)}`
+            : {
+                pathname: `/reader/${slugFromFilename(entry.name)}`,
+                query: {
+                  name: entry.name,
+                  dir: currentPathKey,
+                },
+              }
+        }
         aria-label={`Open ${title}`}
         className="absolute inset-0 z-10 rounded-xs"
       />

@@ -1,7 +1,7 @@
 "use client";
 
 // Shelf-level top bar.
-export function ShelfHeader({ onResetShelf }: { onResetShelf: () => void }) {
+export function ShelfHeader() {
   return (
     <header className="top-0 z-20 flex flex-wrap items-center justify-between gap-4 py-2 border-b  border-black/8">
       <div>
