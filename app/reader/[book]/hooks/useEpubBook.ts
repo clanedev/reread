@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { createArchiveLoader, initialSectionIndex, loadSectionHtml, sectionTitle, type ArchiveLoader, type BookDoc, type LoadedSection } from "../reader-epub";
 
 export function useEpubBook(file: File) {
@@ -10,6 +10,7 @@ export function useEpubBook(file: File) {
   const [status, setStatus] = useState("Preparing reader…");
   const objectUrlsRef = useRef<string[]>([]);
   const loaderRef = useRef<ArchiveLoader | null>(null);
+  const loadedSectionsRef = useRef<LoadedSection[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,6 +39,13 @@ export function useEpubBook(file: File) {
             title: sectionTitle(parsedBook, startIndex),
           },
         ]);
+        loadedSectionsRef.current = [
+          {
+            index: startIndex,
+            html: initialHtml,
+            title: sectionTitle(parsedBook, startIndex),
+          },
+        ];
         setStatus(`Loaded chapter ${startIndex + 1}/${parsedBook.sections.length}`);
       } catch (error) {
         if (cancelled) return;
@@ -53,6 +61,10 @@ export function useEpubBook(file: File) {
   }, [file]);
 
   useEffect(() => {
+    loadedSectionsRef.current = loadedSections;
+  }, [loadedSections]);
+
+  useEffect(() => {
     return () => {
       for (const objectUrl of objectUrlsRef.current) {
         URL.revokeObjectURL(objectUrl);
@@ -64,37 +76,66 @@ export function useEpubBook(file: File) {
   const totalSections = book?.sections.length ?? 0;
   const hasMoreSections = loadedSections.length > 0 && loadedSections[loadedSections.length - 1].index + 1 < totalSections;
 
-  const loadNextSection = async () => {
-    const loader = loaderRef.current;
-    if (!book || !loader) return;
+  const loadSectionAtIndex = useCallback(
+    async (nextIndex: number) => {
+      const loader = loaderRef.current;
+      if (!book || !loader) return false;
 
-    const lastSection = loadedSections[loadedSections.length - 1];
+      if (nextIndex >= book.sections.length) return false;
+      if (loadedSectionsRef.current.some((section) => section.index === nextIndex)) return true;
+
+      setLoadingIndex(nextIndex);
+      setStatus(`Loading chapter ${nextIndex + 1}…`);
+
+      try {
+        const html = await loadSectionHtml(book, nextIndex, loader, objectUrlsRef.current);
+        const nextSection = {
+          index: nextIndex,
+          html,
+          title: sectionTitle(book, nextIndex),
+        } satisfies LoadedSection;
+
+        setLoadedSections((current) => [...current, nextSection].sort((a, b) => a.index - b.index));
+        setStatus(`Loaded chapter ${nextIndex + 1}/${book.sections.length}`);
+        return true;
+      } catch (error) {
+        setStatus(error instanceof Error ? error.message : "Failed to load chapter");
+        console.error(error);
+        return false;
+      } finally {
+        setLoadingIndex(null);
+      }
+    },
+    [book],
+  );
+
+  const loadNextSection = useCallback(async () => {
+    const lastSection = loadedSectionsRef.current[loadedSectionsRef.current.length - 1];
     if (!lastSection) return;
 
-    const nextIndex = lastSection.index + 1;
-    if (nextIndex >= book.sections.length) return;
-    if (loadedSections.some((section) => section.index === nextIndex)) return;
+    await loadSectionAtIndex(lastSection.index + 1);
+  }, [loadSectionAtIndex]);
 
-    setLoadingIndex(nextIndex);
-    setStatus(`Loading chapter ${nextIndex + 1}…`);
+  const loadSectionsThrough = useCallback(
+    async (targetIndex: number) => {
+      const lastSection = loadedSectionsRef.current[loadedSectionsRef.current.length - 1];
+      const currentIndex = lastSection?.index ?? -1;
 
-    try {
-      const html = await loadSectionHtml(book, nextIndex, loader, objectUrlsRef.current);
-      const nextSection = {
-        index: nextIndex,
-        html,
-        title: sectionTitle(book, nextIndex),
-      } satisfies LoadedSection;
+      if (targetIndex <= currentIndex) {
+        return true;
+      }
 
-      setLoadedSections((current) => [...current, nextSection].sort((a, b) => a.index - b.index));
-      setStatus(`Loaded chapter ${nextIndex + 1}/${book.sections.length}`);
-    } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Failed to load chapter");
-      console.error(error);
-    } finally {
-      setLoadingIndex(null);
-    }
-  };
+      for (let nextIndex = currentIndex + 1; nextIndex <= targetIndex; nextIndex += 1) {
+        const loaded = await loadSectionAtIndex(nextIndex);
+        if (!loaded) {
+          return false;
+        }
+      }
+
+      return true;
+    },
+    [loadSectionAtIndex],
+  );
 
   const title = useMemo(() => file.name.replace(/\.epub$/i, ""), [file.name]);
 
@@ -107,5 +148,6 @@ export function useEpubBook(file: File) {
     totalSections,
     hasMoreSections,
     loadNextSection,
+    loadSectionsThrough,
   };
 }

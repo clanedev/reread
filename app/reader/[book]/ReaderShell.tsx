@@ -32,6 +32,7 @@ export default function ReaderShell({
     totalSections,
     hasMoreSections,
     loadNextSection,
+    loadSectionsThrough,
   } = useEpubBook(file);
   const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
   useReaderProgress({
@@ -50,6 +51,28 @@ export default function ReaderShell({
     () => resolveReaderThemeColors(preferences.theme),
     [preferences.theme],
   );
+
+  const tocItems = useMemo(() => {
+    if (!book?.toc || !book.resolveHref) {
+      return [] as Array<{ label: string; index: number }>;
+    }
+
+    const items: Array<{ label: string; index: number }> = [];
+    const seen = new Set<number>();
+
+    for (const item of book.toc) {
+      try {
+        const index = book.resolveHref(item.href).index;
+        if (seen.has(index)) continue;
+        seen.add(index);
+        items.push({ label: item.label, index });
+      } catch {
+        continue;
+      }
+    }
+
+    return items;
+  }, [book]);
 
   const readerStyle = {
     background: themeColors.background,
@@ -75,7 +98,24 @@ export default function ReaderShell({
         activePanel={activePanel}
         preferences={preferences}
         themeColors={themeColors}
+        tocItems={tocItems}
         onPanelChange={setActivePanel}
+        onTocSelect={async (index) => {
+          const loaded = await loadSectionsThrough(index);
+          if (!loaded) return;
+
+          await new Promise<void>((resolve) => {
+            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+          });
+
+          const node = sectionRefs.current[index];
+          if (!node) return;
+
+          window.scrollTo({
+            top: Math.max(0, node.offsetTop - 96),
+            behavior: "smooth",
+          });
+        }}
         onChange={updatePreferences}
       />
 

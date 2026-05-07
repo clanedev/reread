@@ -203,19 +203,45 @@ function ThemePanel({
   );
 }
 
-function TocPanel({ themeColors }: { themeColors: ThemeColors }) {
+function TocPanel({
+  themeColors,
+  tocItems,
+  onTocSelect,
+}: {
+  themeColors: ThemeColors;
+  tocItems: Array<{ label: string; index: number }>;
+  onTocSelect: (index: number) => void;
+}) {
   return (
     <PanelShell
       title="Contents"
       description="Chapter navigation"
       themeColors={themeColors}
     >
-      <div
-        className="px-4 py-3 text-sm border rounded-2xl border-black/6 bg-white/75"
-        style={{ color: themeColors.muted }}
-      >
-        Table of contents will live here.
-      </div>
+      {tocItems.length ? (
+        <div className="max-h-72 space-y-2 overflow-auto pr-1">
+          {tocItems.map((item, position) => (
+            <button
+              key={`${item.index}-${position}`}
+              type="button"
+              onClick={() => onTocSelect(item.index)}
+              className="flex w-full items-center justify-between gap-3 rounded-2xl border border-black/6 bg-white/75 px-4 py-3 text-left text-sm transition hover:border-[#4cada9] hover:bg-[#f2fbfa]"
+            >
+              <span className="min-w-0 truncate text-[#1d2524]">{item.label}</span>
+              <span className="shrink-0 text-xs uppercase tracking-[0.16em] text-[#6b7280]">
+                {item.index + 1}
+              </span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <div
+          className="rounded-2xl border border-black/6 bg-white/75 px-4 py-3 text-sm"
+          style={{ color: themeColors.muted }}
+        >
+          This book does not expose a table of contents.
+        </div>
+      )}
     </PanelShell>
   );
 }
@@ -224,13 +250,17 @@ export function ReaderSettingsPanel({
   activePanel,
   preferences,
   themeColors,
+  tocItems,
   onPanelChange,
+  onTocSelect,
   onChange,
 }: {
   activePanel: ReaderToolPanel | null;
   preferences: ReaderPreferences;
   themeColors: ThemeColors;
+  tocItems: Array<{ label: string; index: number }>;
   onPanelChange: (panel: ReaderToolPanel | null) => void;
+  onTocSelect: (index: number) => void;
   onChange: (
     updater: (current: ReaderPreferences) => ReaderPreferences,
   ) => void;
@@ -251,7 +281,9 @@ export function ReaderSettingsPanel({
       ) : null}
 
       <div className="fixed z-40 flex items-end gap-3 bottom-8 right-6">
-        {activePanel === "toc" ? <TocPanel themeColors={themeColors} /> : null}
+        {activePanel === "toc" ? (
+          <TocPanel themeColors={themeColors} tocItems={tocItems} onTocSelect={onTocSelect} />
+        ) : null}
         {activePanel === "typography" ? (
           <TypographyPanel
             preferences={preferences}
