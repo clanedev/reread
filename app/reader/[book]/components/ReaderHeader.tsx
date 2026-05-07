@@ -1,13 +1,8 @@
 "use client";
-
 import Link from "next/link";
-
 export function ReaderHeader({
   bookTitle,
-  loadedCount,
-  totalSections,
   themeColors,
-  onToggleSettings,
 }: {
   bookTitle: string;
   loadedCount: number;
@@ -19,11 +14,10 @@ export function ReaderHeader({
     muted: string;
     text: string;
   };
-  onToggleSettings: () => void;
 }) {
   return (
     <div
-      className="fixed inset-x-0 top-0 z-30 border-b backdrop-blur"
+      className="fixed inset-x-0 top-0 z-30 max-w-4xl mx-auto border-b backdrop-blur"
       style={{
         borderColor: themeColors.border,
         background: `${themeColors.background}e6`,
@@ -41,16 +35,10 @@ export function ReaderHeader({
             {bookTitle}
           </span>
         </div>
-
-        <div className="flex items-center gap-2 text-sm">
-          <button
-            type="button"
-            onClick={onToggleSettings}
-            className="px-3 py-1 font-medium transition bg-white border rounded-full hover:opacity-90"
-            style={{ borderColor: themeColors.border, color: themeColors.text }}
-          >
-            Settings
-          </button>
+        <div>
+          <Link href="/shelf">
+            <button className="hover:underline">My Shelf</button>
+          </Link>
         </div>
       </div>
     </div>

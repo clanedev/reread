@@ -1,9 +1,79 @@
 "use client";
 
+import { BookOpen, Palette, Type } from "lucide-react";
 import type React from "react";
 import type { ReaderPreferences } from "@/lib/reader/types";
 
-function ReaderSettingRow({
+export type ReaderToolPanel = "toc" | "typography" | "theme";
+
+type ThemeColors = {
+  background: string;
+  border: string;
+  accent: string;
+  muted: string;
+  text: string;
+};
+
+function ToolButton({
+  active,
+  label,
+  children,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  children: React.ReactNode;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={active}
+      onClick={onClick}
+      className="group relative flex h-11 w-11 items-center justify-center rounded-full border bg-white text-[#1d2524] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md aria-pressed:border-[#4cada9] aria-pressed:text-[#4cada9]"
+    >
+      {children}
+      <span className="pointer-events-none absolute right-full mr-3 whitespace-nowrap rounded-full bg-[#1d2524] px-3 py-1 text-xs font-medium text-white opacity-0 shadow-sm transition group-hover:opacity-100">
+        {label}
+      </span>
+    </button>
+  );
+}
+
+function PanelShell({
+  title,
+  description,
+  themeColors,
+  children,
+}: {
+  title: string;
+  description: string;
+  themeColors: ThemeColors;
+  children: React.ReactNode;
+}) {
+  return (
+    <aside
+      className="w-[min(82vw,22rem)] rounded-[1.5rem] border bg-white/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.14)] backdrop-blur"
+      style={{ borderColor: themeColors.border }}
+    >
+      <div className="mb-4">
+        <div
+          className="text-xs uppercase tracking-[0.28em]"
+          style={{ color: themeColors.accent }}
+        >
+          {title}
+        </div>
+        <div className="mt-1 text-sm" style={{ color: themeColors.muted }}>
+          {description}
+        </div>
+      </div>
+      <div className="space-y-3">{children}</div>
+    </aside>
+  );
+}
+
+function SettingRow({
   label,
   children,
 }: {
@@ -11,137 +81,219 @@ function ReaderSettingRow({
   children: React.ReactNode;
 }) {
   return (
-    <label className="flex items-center justify-between gap-4 rounded-2xl border border-black/6 bg-white/75 px-4 py-3">
+    <label className="flex items-center justify-between gap-4 px-4 py-3 border rounded-2xl border-black/6 bg-white/75">
       <span className="text-sm font-medium text-[#1d2524]">{label}</span>
       {children}
     </label>
   );
 }
 
-export function ReaderSettingsPanel({
-  open,
+function TypographyPanel({
   preferences,
   themeColors,
-  onClose,
   onChange,
 }: {
-  open: boolean;
   preferences: ReaderPreferences;
-  themeColors: { background: string; border: string; accent: string; muted: string; text: string };
-  onClose: () => void;
-  onChange: (updater: (current: ReaderPreferences) => ReaderPreferences) => void;
+  themeColors: ThemeColors;
+  onChange: (
+    updater: (current: ReaderPreferences) => ReaderPreferences,
+  ) => void;
 }) {
-  if (!open) return null;
+  return (
+    <PanelShell
+      title="Typography"
+      description="Text size, width, and reading rhythm"
+      themeColors={themeColors}
+    >
+      <SettingRow label="Font size">
+        <input
+          type="range"
+          min={15}
+          max={24}
+          step={1}
+          value={preferences.fontSizePx}
+          onChange={(event) =>
+            onChange((current) => ({
+              ...current,
+              fontSizePx: Number(event.target.value),
+            }))
+          }
+        />
+      </SettingRow>
+
+      <SettingRow label="Line height">
+        <input
+          type="range"
+          min={1.5}
+          max={2.4}
+          step={0.05}
+          value={preferences.lineHeight}
+          onChange={(event) =>
+            onChange((current) => ({
+              ...current,
+              lineHeight: Number(event.target.value),
+            }))
+          }
+        />
+      </SettingRow>
+
+      <SettingRow label="Paragraph gap">
+        <input
+          type="range"
+          min={0.25}
+          max={1.4}
+          step={0.05}
+          value={preferences.paragraphSpacingEm}
+          onChange={(event) =>
+            onChange((current) => ({
+              ...current,
+              paragraphSpacingEm: Number(event.target.value),
+            }))
+          }
+        />
+      </SettingRow>
+    </PanelShell>
+  );
+}
+
+function ThemePanel({
+  preferences,
+  themeColors,
+  onChange,
+}: {
+  preferences: ReaderPreferences;
+  themeColors: ThemeColors;
+  onChange: (
+    updater: (current: ReaderPreferences) => ReaderPreferences,
+  ) => void;
+}) {
+  return (
+    <PanelShell
+      title="Theme"
+      description="Background and text color"
+      themeColors={themeColors}
+    >
+      <div className="grid grid-cols-3 gap-2">
+        {(["light", "sepia", "dark"] as const).map((theme) => (
+          <button
+            key={theme}
+            type="button"
+            onClick={() => onChange((current) => ({ ...current, theme }))}
+            className="rounded-2xl border px-3 py-3 text-xs uppercase tracking-[0.18em] transition hover:opacity-80"
+            style={{
+              borderColor:
+                preferences.theme === theme
+                  ? themeColors.accent
+                  : themeColors.border,
+              color:
+                preferences.theme === theme
+                  ? themeColors.accent
+                  : themeColors.muted,
+              background:
+                preferences.theme === theme
+                  ? "rgba(76,173,169,0.08)"
+                  : "transparent",
+            }}
+          >
+            {theme}
+          </button>
+        ))}
+      </div>
+    </PanelShell>
+  );
+}
+
+function TocPanel({ themeColors }: { themeColors: ThemeColors }) {
+  return (
+    <PanelShell
+      title="Contents"
+      description="Chapter navigation"
+      themeColors={themeColors}
+    >
+      <div
+        className="px-4 py-3 text-sm border rounded-2xl border-black/6 bg-white/75"
+        style={{ color: themeColors.muted }}
+      >
+        Table of contents will live here.
+      </div>
+    </PanelShell>
+  );
+}
+
+export function ReaderSettingsPanel({
+  activePanel,
+  preferences,
+  themeColors,
+  onPanelChange,
+  onChange,
+}: {
+  activePanel: ReaderToolPanel | null;
+  preferences: ReaderPreferences;
+  themeColors: ThemeColors;
+  onPanelChange: (panel: ReaderToolPanel | null) => void;
+  onChange: (
+    updater: (current: ReaderPreferences) => ReaderPreferences,
+  ) => void;
+}) {
+  const togglePanel = (panel: ReaderToolPanel) => {
+    onPanelChange(activePanel === panel ? null : panel);
+  };
 
   return (
-    <div
-      className="fixed right-4 top-20 z-40 w-[min(92vw,26rem)] rounded-[1.5rem] border bg-white/95 p-4 shadow-[0_18px_50px_rgba(0,0,0,0.14)] backdrop-blur"
-      style={{ borderColor: themeColors.border }}
-    >
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <div className="text-xs uppercase tracking-[0.28em]" style={{ color: themeColors.accent }}>
-            Reader settings
-          </div>
-          <div className="mt-1 text-sm text-[#6b7a78]">Typography and reading mode</div>
-        </div>
+    <>
+      {activePanel ? (
         <button
           type="button"
-          onClick={onClose}
-          className="rounded-full border px-3 py-1 text-sm"
-          style={{ borderColor: themeColors.border, color: themeColors.text }}
+          aria-label="Close reader tools"
+          className="fixed inset-0 z-30 bg-transparent cursor-default"
+          onClick={() => onPanelChange(null)}
+        />
+      ) : null}
+
+      <div className="fixed z-40 flex items-end gap-3 bottom-8 right-6">
+        {activePanel === "toc" ? <TocPanel themeColors={themeColors} /> : null}
+        {activePanel === "typography" ? (
+          <TypographyPanel
+            preferences={preferences}
+            themeColors={themeColors}
+            onChange={onChange}
+          />
+        ) : null}
+        {activePanel === "theme" ? (
+          <ThemePanel
+            preferences={preferences}
+            themeColors={themeColors}
+            onChange={onChange}
+          />
+        ) : null}
+
+        <div
+          className="flex flex-col gap-2 rounded-full border bg-white/90 p-2 shadow-[0_12px_34px_rgba(0,0,0,0.12)] backdrop-blur"
+          style={{ borderColor: themeColors.border }}
         >
-          Close
-        </button>
-      </div>
-
-      <div className="space-y-3">
-        <ReaderSettingRow label="Theme">
-          <div className="flex gap-2">
-            {(["light", "sepia", "dark"] as const).map((theme) => (
-              <button
-                key={theme}
-                type="button"
-                onClick={() => onChange((current) => ({ ...current, theme }))}
-                className="rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em]"
-                style={{
-                  borderColor: preferences.theme === theme ? themeColors.accent : themeColors.border,
-                  color: preferences.theme === theme ? themeColors.accent : themeColors.muted,
-                  background: preferences.theme === theme ? "rgba(76,173,169,0.08)" : "transparent",
-                }}
-              >
-                {theme}
-              </button>
-            ))}
-          </div>
-        </ReaderSettingRow>
-
-        <ReaderSettingRow label="Font size">
-          <input
-            type="range"
-            min={15}
-            max={24}
-            step={1}
-            value={preferences.fontSizePx}
-            onChange={(event) => onChange((current) => ({ ...current, fontSizePx: Number(event.target.value) }))}
-          />
-        </ReaderSettingRow>
-
-        <ReaderSettingRow label="Line height">
-          <input
-            type="range"
-            min={1.5}
-            max={2.4}
-            step={0.05}
-            value={preferences.lineHeight}
-            onChange={(event) => onChange((current) => ({ ...current, lineHeight: Number(event.target.value) }))}
-          />
-        </ReaderSettingRow>
-
-        <ReaderSettingRow label="Paragraph gap">
-          <input
-            type="range"
-            min={0.25}
-            max={1.4}
-            step={0.05}
-            value={preferences.paragraphSpacingEm}
-            onChange={(event) => onChange((current) => ({ ...current, paragraphSpacingEm: Number(event.target.value) }))}
-          />
-        </ReaderSettingRow>
-
-        <ReaderSettingRow label="Page width">
-          <input
-            type="range"
-            min={560}
-            max={900}
-            step={10}
-            value={preferences.maxWidthPx}
-            onChange={(event) => onChange((current) => ({ ...current, maxWidthPx: Number(event.target.value) }))}
-          />
-        </ReaderSettingRow>
-
-        <ReaderSettingRow label="First line indent">
-          <button
-            type="button"
-            onClick={() => onChange((current) => ({ ...current, firstLineIndent: !current.firstLineIndent }))}
-            className="rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em]"
-            style={{ borderColor: preferences.firstLineIndent ? themeColors.accent : themeColors.border, color: preferences.firstLineIndent ? themeColors.accent : themeColors.muted }}
+          <ToolButton
+            active={activePanel === "toc"}
+            label="Contents"
+            onClick={() => togglePanel("toc")}
           >
-            {preferences.firstLineIndent ? "On" : "Off"}
-          </button>
-        </ReaderSettingRow>
-
-        <ReaderSettingRow label="Justify text">
-          <button
-            type="button"
-            onClick={() => onChange((current) => ({ ...current, justify: !current.justify }))}
-            className="rounded-full border px-3 py-1 text-xs uppercase tracking-[0.18em]"
-            style={{ borderColor: preferences.justify ? themeColors.accent : themeColors.border, color: preferences.justify ? themeColors.accent : themeColors.muted }}
+            <BookOpen className="w-5 h-5" />
+          </ToolButton>
+          <ToolButton
+            active={activePanel === "typography"}
+            label="Typography"
+            onClick={() => togglePanel("typography")}
           >
-            {preferences.justify ? "On" : "Off"}
-          </button>
-        </ReaderSettingRow>
+            <Type className="w-5 h-5" />
+          </ToolButton>
+          <ToolButton
+            active={activePanel === "theme"}
+            label="Theme"
+            onClick={() => togglePanel("theme")}
+          >
+            <Palette className="w-5 h-5" />
+          </ToolButton>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

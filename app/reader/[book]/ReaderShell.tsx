@@ -10,8 +10,7 @@ import { useReaderProgress } from "./hooks/useReaderProgress";
 import { LoadNextSectionButton } from "./components/LoadNextSectionButton";
 import { ReaderChapterList } from "./components/ReaderChapterList";
 import { ReaderHeader } from "./components/ReaderHeader";
-import { ReaderSettingsPanel } from "./components/ReaderSettingsPanel";
-import { ReaderStatus } from "./components/ReaderStatus";
+import { ReaderSettingsPanel, type ReaderToolPanel } from "./components/ReaderSettingsPanel";
 
 export default function ReaderShell({
   file,
@@ -29,7 +28,6 @@ export default function ReaderShell({
     book,
     loadedSections,
     loadingIndex,
-    status,
     title,
     totalSections,
     hasMoreSections,
@@ -45,7 +43,7 @@ export default function ReaderShell({
     loadedSections,
     sectionRefs,
   });
-  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [activePanel, setActivePanel] = useState<ReaderToolPanel | null>(null);
 
   const bookTitle = book?.metadata?.title?.trim() || title;
   const themeColors = useMemo(
@@ -71,14 +69,13 @@ export default function ReaderShell({
         loadedCount={loadedSections.length}
         totalSections={totalSections}
         themeColors={themeColors}
-        onToggleSettings={() => setSettingsOpen((value) => !value)}
       />
 
       <ReaderSettingsPanel
-        open={settingsOpen}
+        activePanel={activePanel}
         preferences={preferences}
         themeColors={themeColors}
-        onClose={() => setSettingsOpen(false)}
+        onPanelChange={setActivePanel}
         onChange={updatePreferences}
       />
 
