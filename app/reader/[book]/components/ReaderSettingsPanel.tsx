@@ -209,8 +209,8 @@ function TocPanel({
   onTocSelect,
 }: {
   themeColors: ThemeColors;
-  tocItems: Array<{ label: string; index: number }>;
-  onTocSelect: (index: number) => void;
+  tocItems: Array<{ label: string; index: number; href: string }>;
+  onTocSelect: (item: { label: string; index: number; href: string }) => void;
 }) {
   return (
     <PanelShell
@@ -224,7 +224,7 @@ function TocPanel({
             <button
               key={`${item.index}-${position}`}
               type="button"
-              onClick={() => onTocSelect(item.index)}
+              onClick={() => onTocSelect(item)}
               className="flex w-full items-center justify-between gap-3 rounded-2xl border border-black/6 bg-white/75 px-4 py-3 text-left text-sm transition hover:border-[#4cada9] hover:bg-[#f2fbfa]"
             >
               <span className="min-w-0 truncate text-[#1d2524]">{item.label}</span>
@@ -258,9 +258,9 @@ export function ReaderSettingsPanel({
   activePanel: ReaderToolPanel | null;
   preferences: ReaderPreferences;
   themeColors: ThemeColors;
-  tocItems: Array<{ label: string; index: number }>;
+  tocItems: Array<{ label: string; index: number; href: string }>;
   onPanelChange: (panel: ReaderToolPanel | null) => void;
-  onTocSelect: (index: number) => void;
+  onTocSelect: (item: { label: string; index: number; href: string }) => void;
   onChange: (
     updater: (current: ReaderPreferences) => ReaderPreferences,
   ) => void;

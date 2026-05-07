@@ -34,6 +34,8 @@ export function useReaderProgress({
   file,
   loadedSections,
   sectionRefs,
+  loadSectionsThrough,
+  enabled = true,
 }: {
   book: BookDoc | null;
   bookId: string;
@@ -42,13 +44,20 @@ export function useReaderProgress({
   file: File;
   loadedSections: LoadedSection[];
   sectionRefs: React.MutableRefObject<Record<number, HTMLElement | null>>;
+  loadSectionsThrough: (targetIndex: number) => Promise<boolean>;
+  enabled?: boolean;
 }) {
   const [bookProgress, setBookProgress] = useState<BookProgress | null>(null);
   const [progressReady, setProgressReady] = useState(false);
   const restoredScrollRef = useRef(false);
+  const restoreLoadTargetRef = useRef<number | null>(null);
   const scrollSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    if (!enabled) {
+      return;
+    }
+
     let active = true;
 
     void (async () => {
@@ -70,18 +79,33 @@ export function useReaderProgress({
     return () => {
       active = false;
       restoredScrollRef.current = false;
+      restoreLoadTargetRef.current = null;
     };
-  }, [bookId]);
+  }, [bookId, enabled]);
 
   useEffect(() => {
-    if (!progressReady || !bookProgress || restoredScrollRef.current || loadedSections.length === 0) return;
+    if (!enabled || !progressReady || !bookProgress || restoredScrollRef.current || loadedSections.length === 0) return;
+
+    const targetIndex = bookProgress.sectionIndex;
+    const lastLoadedIndex = loadedSections[loadedSections.length - 1]?.index ?? -1;
+
+    if (lastLoadedIndex < targetIndex) {
+      if (restoreLoadTargetRef.current === targetIndex) {
+        return;
+      }
+
+      restoreLoadTargetRef.current = targetIndex;
+      void (async () => {
+        await loadSectionsThrough(targetIndex);
+        restoreLoadTargetRef.current = null;
+      })();
+      return;
+    }
 
     let frame2 = 0;
     const frame1 = requestAnimationFrame(() => {
       frame2 = requestAnimationFrame(() => {
-        const totalScrollable = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
-        const targetTop = Math.max(0, Math.min(bookProgress.progressRatio * totalScrollable, totalScrollable));
-        window.scrollTo({ top: targetTop, behavior: "auto" });
+        window.scrollTo({ top: Math.max(0, bookProgress.scrollTop), behavior: "auto" });
         restoredScrollRef.current = true;
       });
     });
@@ -90,10 +114,10 @@ export function useReaderProgress({
       cancelAnimationFrame(frame1);
       cancelAnimationFrame(frame2);
     };
-  }, [bookProgress, loadedSections.length, progressReady]);
+  }, [bookProgress, enabled, loadedSections, loadSectionsThrough, progressReady]);
 
   useEffect(() => {
-    if (!book) return;
+    if (!enabled || !book) return;
 
     const saveNow = () => {
       const currentIndex = findCurrentSectionIndex(loadedSections, sectionRefs);
@@ -133,5 +157,5 @@ export function useReaderProgress({
       }
       saveNow();
     };
-  }, [book, bookId, dirKey, file.name, fileName, loadedSections, sectionRefs]);
+  }, [book, bookId, dirKey, enabled, file.name, fileName, loadedSections, sectionRefs]);
 }

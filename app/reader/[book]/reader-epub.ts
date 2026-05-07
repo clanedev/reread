@@ -4,6 +4,8 @@ export type SectionDoc = {
   id: string;
   href?: string;
   linear?: string;
+  size?: number;
+  cfi?: string;
   createDocument?: () => Promise<Document>;
 };
 

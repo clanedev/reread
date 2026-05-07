@@ -20,6 +20,10 @@ export type BookProgress = {
   sectionIndex: number;
   sectionHref?: string;
   inSectionAnchor?: string;
+  sectionProgress?: number;
+  sectionCfi?: string;
+  cfi?: string;
+  locationFraction?: number;
   scrollTop: number;
   scrollHeight: number;
   progressRatio: number;
