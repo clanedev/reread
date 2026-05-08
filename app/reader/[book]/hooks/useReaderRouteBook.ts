@@ -2,16 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { loadEpubPreview } from "@/lib/reader/cover";
-import { getShelfState, getEpubBookLocationRecord } from "@/lib/shelf/db";
-import { isEpubFileName } from "@/lib/shelf/filesystem";
-import { isSlugMatchFilename } from "@/lib/reader/slug";
+import { getShelfState, getEpubBookRecord } from "@/lib/shelf/db";
 
 export function useReaderRouteBook({
   params,
-  searchParams,
 }: {
   params: Promise<{ book: string }>;
-  searchParams: Promise<{ name?: string; dir?: string }>;
 }) {
   const [book, setBook] = useState<{
     file: File;
@@ -27,58 +23,19 @@ export function useReaderRouteBook({
       try {
         setBook(null);
 
-        const [{ book: routeBook }, resolvedSearchParams] = await Promise.all([params, searchParams]);
-        const legacyFileName = resolvedSearchParams.name ?? "";
-        const legacyDirKey = resolvedSearchParams.dir ?? "";
-        const hasLegacyQuery = Boolean(legacyFileName && legacyDirKey);
-
+        const { book: routeBook } = await params;
         const state = await getShelfState();
         if (!state) {
           throw new Error("No shelf is available.");
         }
 
-        let fileName = legacyFileName;
-        let dirKey = legacyDirKey;
         const bookId = decodeURIComponent(routeBook);
-
-        if (hasLegacyQuery) {
-          if (!isEpubFileName(legacyFileName) || !isSlugMatchFilename(routeBook, legacyFileName)) {
-            throw new Error("Invalid book link.");
-          }
-
-          const handle = state.handles[legacyDirKey];
-          if (!handle) {
-            throw new Error("Folder not found.");
-          }
-
-          const permission = await handle.queryPermission({ mode: "read" });
-          const granted =
-            permission === "granted" ||
-            (permission === "prompt" && (await handle.requestPermission({ mode: "read" })) === "granted");
-
-          if (!granted) {
-            throw new Error("Permission denied.");
-          }
-
-          const fileHandle = await handle.getFileHandle(legacyFileName);
-          const file = await fileHandle.getFile();
-          const preview = await loadEpubPreview(file);
-
-          if (!active) return;
-
-          setBook({ file, dirKey: legacyDirKey, fileName: legacyFileName, bookId: preview.contentKey });
-          return;
-        }
-
-        const location = await getEpubBookLocationRecord(bookId);
-        if (!location) {
+        const record = await getEpubBookRecord(bookId);
+        if (!record?.dirKey || !record.fileName) {
           throw new Error("Book location not found.");
         }
 
-        fileName = location.fileName;
-        dirKey = location.dirKey;
-
-        const handle = state.handles[location.dirKey];
+        const handle = state.handles[record.dirKey];
         if (!handle) {
           throw new Error("Folder not found.");
         }
@@ -92,7 +49,7 @@ export function useReaderRouteBook({
           throw new Error("Permission denied.");
         }
 
-        const fileHandle = await handle.getFileHandle(location.fileName);
+        const fileHandle = await handle.getFileHandle(record.fileName);
         const file = await fileHandle.getFile();
         const preview = await loadEpubPreview(file);
 
@@ -101,7 +58,7 @@ export function useReaderRouteBook({
           throw new Error("Book location mismatch.");
         }
 
-        setBook({ file, dirKey, fileName, bookId: preview.contentKey });
+        setBook({ file, dirKey: record.dirKey, fileName: record.fileName, bookId: preview.contentKey });
       } catch {
         if (active) {
           setBook(null);
@@ -112,7 +69,7 @@ export function useReaderRouteBook({
     return () => {
       active = false;
     };
-  }, [params, searchParams]);
+  }, [params]);
 
   return book;
 }

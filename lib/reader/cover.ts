@@ -2,9 +2,8 @@ import { EPUB } from 'foliate-js/epub.js';
 import { configure, BlobReader, BlobWriter, TextWriter, ZipReader } from '@zip.js/zip.js';
 import {
   getEpubBookRecord,
-  getEpubFingerprintRecord,
+  getEpubBookRecordByFingerprint,
   setEpubBookRecord,
-  setEpubFingerprintRecord,
   type EpubBookRecord,
 } from '@/lib/shelf/db';
 
@@ -24,7 +23,7 @@ type EpubBook = {
   getCover?: () => Promise<Blob | null>;
 };
 
-type EpubPreview = Pick<EpubBookRecord, 'contentKey' | 'identifier' | 'title' | 'author' | 'modified' | 'coverBlob'>;
+type EpubPreview = EpubBookRecord;
 
 function makeFingerprintKey(file: File) {
   return `fp:${file.name}:${file.size}:${file.lastModified}`;
@@ -79,7 +78,7 @@ async function makeContentKey(file: File) {
   combined.set(headBytes, 0);
   combined.set(tailBytes, headBytes.length);
 
-  return `content:${await sha256Hex(combined.buffer)}`;
+  return await sha256Hex(combined.buffer);
 }
 
 async function makeLoader(file: File): Promise<ArchiveLoader> {
@@ -103,21 +102,21 @@ async function makeLoader(file: File): Promise<ArchiveLoader> {
 
 export async function loadEpubPreview(file: File): Promise<EpubPreview> {
   const fingerprintKey = makeFingerprintKey(file);
-  const fingerprintRecord = await getEpubFingerprintRecord(fingerprintKey);
+  const fingerprintRecord = await getEpubBookRecordByFingerprint(fingerprintKey);
   if (fingerprintRecord) {
-    const cached = await getEpubBookRecord(fingerprintRecord.contentKey);
-    if (cached) return cached;
+    return fingerprintRecord;
   }
 
   const contentKey = await makeContentKey(file);
   const cachedBook = await getEpubBookRecord(contentKey);
   if (cachedBook) {
-    await setEpubFingerprintRecord({
+    const nextRecord = {
+      ...cachedBook,
       fingerprintKey,
-      contentKey,
       updatedAt: Date.now(),
-    });
-    return cachedBook;
+    } satisfies EpubBookRecord;
+    await setEpubBookRecord(nextRecord);
+    return nextRecord;
   }
 
   const loader = await makeLoader(file);
@@ -127,6 +126,7 @@ export async function loadEpubPreview(file: File): Promise<EpubPreview> {
 
   const record: EpubBookRecord = {
     contentKey,
+    fingerprintKey,
     identifier: metadata.identifier,
     title: metadata.title,
     author: metadata.author,
@@ -136,12 +136,6 @@ export async function loadEpubPreview(file: File): Promise<EpubPreview> {
   };
 
   await setEpubBookRecord(record);
-  await setEpubFingerprintRecord({
-    fingerprintKey,
-    contentKey,
-    updatedAt: record.updatedAt,
-  });
-
   return record;
 }
 

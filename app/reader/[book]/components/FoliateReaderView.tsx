@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import type { ReaderPreferences } from "@/lib/reader/types";
 
 type ThemeColors = {
   background: string;
@@ -33,10 +34,6 @@ type FoliateViewElement = HTMLElement & {
   next: () => Promise<void>;
 };
 
-type FoliateViewHost = FoliateViewElement & {
-  renderer?: HTMLElement;
-};
-
 export type FoliateReaderHandle = {
   goTo: (target: FoliateNavigationTarget) => Promise<void>;
   prev: () => Promise<void>;
@@ -51,20 +48,54 @@ function locationKey(target: FoliateNavigationTarget | null | undefined) {
   return typeof target === "object" ? JSON.stringify(target) : String(target);
 }
 
+function applyTypographyStyles(doc: Document, preferences: ReaderPreferences) {
+  let style = doc.head.querySelector<HTMLStyleElement>("style[data-reader-typography]");
+  if (!style) {
+    style = doc.createElement("style");
+    style.dataset.readerTypography = "true";
+    doc.head.append(style);
+  }
+
+  style.textContent = `
+    html {
+      font-size: ${preferences.fontSizePx}px;
+    }
+
+    body {
+      line-height: ${preferences.lineHeight};
+      padding-left: ${preferences.pagePaddingPx}px;
+      padding-right: ${preferences.pagePaddingPx}px;
+      max-width: ${preferences.maxWidthPx}px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: ${preferences.justify ? "justify" : "start"};
+      text-justify: ${preferences.justify ? "inter-word" : "auto"};
+    }
+
+    p {
+      margin-block: 0 ${preferences.paragraphSpacingEm}em;
+      text-indent: ${preferences.firstLineIndent ? "1.5em" : "0"};
+    }
+  `;
+}
+
 export const FoliateReaderView = forwardRef<
   FoliateReaderHandle,
   {
     file: File;
     restoreTargets?: FoliateNavigationTarget[];
+    preferences: ReaderPreferences;
     themeColors: ThemeColors;
     onRelocate?: (detail: FoliateRelocateDetail) => void;
   }
->(function FoliateReaderView({ file, restoreTargets = [], themeColors, onRelocate }, ref) {
+>(function FoliateReaderView({ file, restoreTargets = [], preferences, themeColors, onRelocate }, ref) {
   const hostRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<FoliateViewElement | null>(null);
   const appliedLocationRef = useRef("");
   const readyRef = useRef(false);
+  const preferencesRef = useRef(preferences);
   const themeColorsRef = useRef(themeColors);
+  const loadedDocsRef = useRef(new Map<number, Document>());
 
   useImperativeHandle(ref, () => ({
     async goTo(target: FoliateNavigationTarget) {
@@ -85,10 +116,15 @@ export const FoliateReaderView = forwardRef<
   }), []);
 
   useEffect(() => {
+    preferencesRef.current = preferences;
     themeColorsRef.current = themeColors;
-  }, [themeColors]);
+    for (const doc of loadedDocsRef.current.values()) {
+      applyTypographyStyles(doc, preferences);
+    }
+  }, [preferences, themeColors]);
 
   useEffect(() => {
+    const loadedDocs = loadedDocsRef.current;
     let active = true;
     let currentView: FoliateViewElement | null = null;
     let handleRelocate: ((event: Event) => void) | null = null;
@@ -101,7 +137,9 @@ export const FoliateReaderView = forwardRef<
         return;
       }
 
-      const view = document.createElement("foliate-view") as FoliateViewHost;
+      const view = document.createElement("foliate-view") as FoliateViewElement & {
+        renderer?: HTMLElement;
+      };
       currentView = view;
       viewRef.current = view;
       view.style.display = "block";
@@ -114,8 +152,10 @@ export const FoliateReaderView = forwardRef<
       };
 
       handleLoad = (event: Event) => {
-        const detail = (event as CustomEvent<FoliateLoadDetail>).detail;
-        const { doc } = detail;
+        const { doc, index } = (event as CustomEvent<FoliateLoadDetail>).detail;
+        loadedDocsRef.current.set(index, doc);
+        applyTypographyStyles(doc, preferencesRef.current);
+
         const { background, border, text } = themeColorsRef.current;
         const navStyle = doc.createElement("style");
         navStyle.textContent = `
@@ -206,6 +246,7 @@ export const FoliateReaderView = forwardRef<
 
     return () => {
       active = false;
+      loadedDocs.clear();
       if (currentView && handleRelocate) {
         currentView.removeEventListener("relocate", handleRelocate as EventListener);
       }

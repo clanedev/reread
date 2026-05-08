@@ -7,10 +7,7 @@ import type { ReaderPreferences } from "@/lib/reader/types";
 import { useEpubBook } from "./hooks/useEpubBook";
 import { useFoliateReaderProgress } from "./hooks/useFoliateReaderProgress";
 import { useReaderPreferences } from "./hooks/useReaderPreferences";
-import { useReaderProgress } from "./hooks/useReaderProgress";
 import { FoliateReaderView, type FoliateReaderHandle } from "./components/FoliateReaderView";
-import { LoadNextSectionButton } from "./components/LoadNextSectionButton";
-import { ReaderChapterList } from "./components/ReaderChapterList";
 import { ReaderHeader } from "./components/ReaderHeader";
 import { ReaderSettingsPanel, type ReaderToolPanel } from "./components/ReaderSettingsPanel";
 
@@ -26,38 +23,15 @@ export default function ReaderShell({
   fileName: string;
 }) {
   const { preferences, setPreferences } = useReaderPreferences();
-  const {
-    book,
-    loadedSections,
-    loadingIndex,
-    title,
-    totalSections,
-    hasMoreSections,
-    loadNextSection,
-    loadSectionsThrough,
-  } = useEpubBook(file);
-  const sectionRefs = useRef<Record<number, HTMLElement | null>>({});
+  const { book, title } = useEpubBook(file);
   const foliateViewRef = useRef<FoliateReaderHandle | null>(null);
-  const useFoliateRenderer = true;
   const foliateProgress = useFoliateReaderProgress({
     book,
     bookId,
     dirKey,
     fileName,
     file,
-    enabled: useFoliateRenderer,
-  });
-  const foliateReady = !useFoliateRenderer || foliateProgress.progressReady;
-  useReaderProgress({
-    book,
-    bookId,
-    dirKey,
-    fileName,
-    file,
-    loadedSections,
-    sectionRefs,
-    loadSectionsThrough,
-    enabled: !useFoliateRenderer,
+    enabled: true,
   });
   const [activePanel, setActivePanel] = useState<ReaderToolPanel | null>(null);
 
@@ -94,20 +68,13 @@ export default function ReaderShell({
     color: themeColors.text,
   } as React.CSSProperties;
 
-  const updatePreferences = (
-    updater: (current: ReaderPreferences) => ReaderPreferences,
-  ) => {
+  const updatePreferences = (updater: (current: ReaderPreferences) => ReaderPreferences) => {
     setPreferences(updater);
   };
 
   return (
     <main className="min-h-screen bg-gray-100" style={readerStyle}>
-      <ReaderHeader
-        bookTitle={bookTitle}
-        loadedCount={loadedSections.length}
-        totalSections={totalSections}
-        themeColors={themeColors}
-      />
+      <ReaderHeader bookTitle={bookTitle} themeColors={themeColors} />
 
       <ReaderSettingsPanel
         activePanel={activePanel}
@@ -116,63 +83,27 @@ export default function ReaderShell({
         tocItems={tocItems}
         onPanelChange={setActivePanel}
         onTocSelect={async (item) => {
-          if (useFoliateRenderer) {
-            await foliateViewRef.current?.goTo(item.href);
-            return;
-          }
-
-          const loaded = await loadSectionsThrough(item.index);
-          if (!loaded) return;
-
-          await new Promise<void>((resolve) => {
-            requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
-          });
-
-          const node = sectionRefs.current[item.index];
-          if (!node) return;
-
-          window.scrollTo({
-            top: Math.max(0, node.offsetTop - 96),
-            behavior: "smooth",
-          });
+          await foliateViewRef.current?.goTo(item.href);
         }}
         onChange={updatePreferences}
       />
 
-      {useFoliateRenderer ? (
-        foliateReady ? (
-          <div className="w-full px-4 pt-20 mx-auto bg-white lg:px-6">
-            <FoliateReaderView
-              ref={foliateViewRef}
-              file={file}
-              restoreTargets={foliateProgress.restoreTargets}
-              themeColors={themeColors}
-              onRelocate={foliateProgress.handleRelocate}
-            />
-          </div>
-        ) : (
-          <div className="w-full max-w-4xl px-4 pt-20 mx-auto bg-white lg:px-6">
-            <div className="rounded-2xl border border-black/6 bg-white/75 px-4 py-3 text-sm text-[#6b7280]">
-              Loading reader…
-            </div>
-          </div>
-        )
-      ) : (
-        <div className="w-full max-w-4xl px-4 pt-20 mx-auto bg-white lg:px-6">
-          <ReaderChapterList
-            sections={loadedSections}
+      {foliateProgress.progressReady ? (
+        <div className="w-full px-4 pt-20 mx-auto bg-white lg:px-6">
+          <FoliateReaderView
+            ref={foliateViewRef}
+            file={file}
+            restoreTargets={foliateProgress.restoreTargets}
             preferences={preferences}
             themeColors={themeColors}
-            sectionRefs={sectionRefs}
+            onRelocate={foliateProgress.handleRelocate}
           />
-
-          <LoadNextSectionButton
-            hasMoreSections={hasMoreSections}
-            loadingIndex={loadingIndex}
-            lastLoadedIndex={loadedSections[loadedSections.length - 1]?.index ?? null}
-            onLoadNext={loadNextSection}
-            themeColors={themeColors}
-          />
+        </div>
+      ) : (
+        <div className="w-full max-w-4xl px-4 pt-20 mx-auto bg-white lg:px-6">
+          <div className="rounded-2xl border border-black/6 bg-white/75 px-4 py-3 text-sm text-[#6b7280]">
+            Loading reader…
+          </div>
         </div>
       )}
     </main>

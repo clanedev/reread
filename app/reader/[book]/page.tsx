@@ -5,12 +5,10 @@ import { useReaderRouteBook } from "./hooks/useReaderRouteBook";
 
 export default function ReaderPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ book: string }>;
-  searchParams: Promise<{ name?: string; dir?: string }>;
 }) {
-  const book = useReaderRouteBook({ params, searchParams });
+  const book = useReaderRouteBook({ params });
 
   if (!book) {
     return null;

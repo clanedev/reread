@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { loadEpubPreview } from "@/lib/reader/cover";
 import { getPathKey, isEpubFileName } from "@/lib/shelf/filesystem";
-import { setEpubBookLocationRecord } from "@/lib/shelf/db";
+import { setEpubBookRecord } from "@/lib/shelf/db";
 import type { DirectoryEntry, ShelfState } from "@/lib/shelf/types";
 import type { ShelfPreviewMap } from "../types";
 
@@ -46,8 +46,8 @@ export function useEpubPreviews(state: ShelfState | null, entries: DirectoryEntr
             const preview = await loadEpubPreview(file);
             if (cancelled) return null;
 
-            void setEpubBookLocationRecord({
-              contentKey: preview.contentKey,
+            void setEpubBookRecord({
+              ...preview,
               dirKey: pathKey,
               fileName: entry.name,
               updatedAt: Date.now(),

@@ -1,12 +1,12 @@
 "use client";
+
 import Link from "next/link";
+
 export function ReaderHeader({
   bookTitle,
   themeColors,
 }: {
   bookTitle: string;
-  loadedCount: number;
-  totalSections: number;
   themeColors: {
     background: string;
     border: string;
@@ -24,14 +24,8 @@ export function ReaderHeader({
       }}
     >
       <div className="flex items-center justify-between w-full h-16 max-w-6xl gap-3 px-4 mx-auto lg:px-6">
-        <div
-          className="flex items-center text-sm w-xs text-ellipsis"
-          style={{ color: themeColors.muted }}
-        >
-          <span
-            className="font-medium truncate"
-            style={{ color: themeColors.text }}
-          >
+        <div className="flex items-center text-sm w-xs text-ellipsis" style={{ color: themeColors.muted }}>
+          <span className="font-medium truncate" style={{ color: themeColors.text }}>
             {bookTitle}
           </span>
         </div>
