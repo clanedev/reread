@@ -1,6 +1,6 @@
 # reread
 
-English | [中文](/README.md)
+English | [中文](/README.zh.md)
 
 reread is a local-first EPUB reader. It is meant to be a lightweight reading tool for books you already keep on your own machine: open the page, read your files directly, and avoid cloud accounts or re-uploading your library to another service.
 
